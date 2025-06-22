@@ -1,65 +1,136 @@
 import sys
+import os
 import random
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton,
     QVBoxLayout, QHBoxLayout, QTextEdit, QFrame
 )
-from PyQt5.QtGui import QFont, QPainter, QPen
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont, QPainter, QPen, QPixmap
+from PyQt5.QtCore import Qt, QTimer, QUrl
+
+# from PyQt5.QtMultimedia import QSoundEffect
 
 class HangmanDrawing(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setMinimumSize(300, 400)
         self.max_parts = 7
         self.parts_remaining = self.max_parts
-        self.setMinimumSize(300, 400)
+        self.animating = False
+        self.melt_step = 0
+        self.current_melting = None
+        self.part_scales = [1.0] * self.max_parts  # scale of each part (1.0 = full size)
+        self.bg_image = QPixmap("assets/images/background.jpg")
 
     def set_wrong_guesses(self, count):
-        self.parts_remaining = max(0, self.max_parts - count)
-        self.update()
+        if self.animating:
+            return  # prevent overlapping animations
+
+        melt_index = self.max_parts - count
+        if melt_index < 0 or melt_index >= self.max_parts:
+            return
+
+        self.current_melting = melt_index
+        self.animating = True
+        self.melt_step = 0
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.animate_melt)
+        self.timer.start(50)  # every 50ms
+
+        # self.melt_sound = QSoundEffect()
+        # self.melt_sound.setSource(QUrl.fromLocalFile("melt.wav"))
+        # self.melt_sound.setVolume(0.8)
+
+
+    def animate_melt(self):
+        if self.melt_step < 10:
+            # shrink part by 10% each time
+            self.part_scales[self.current_melting] -= 0.1
+            self.melt_step += 1
+            self.update()
+        else:
+            # Done melting
+            self.part_scales[self.current_melting] = 0.0
+            self.animating = False
+            self.current_melting = None
+            self.timer.stop()
+            self.update()
+        
+        # self.melt_sound.play()
+        
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         pen = QPen(Qt.black, 2)
         painter.setPen(pen)
-
         center_x = 150
+        painter.drawPixmap(self.rect(), self.bg_image)
+        painter.setBrush(Qt.white)  # Solid white snowballs
 
-        # 1. Base Snowball
-        if self.parts_remaining >= 1:
-            painter.drawEllipse(center_x - 50, 250, 100, 100)
 
-        # 2. Middle Snowball
-        if self.parts_remaining >= 2:
-            painter.drawEllipse(center_x - 40, 180, 80, 80)
+        def draw_scaled_ellipse(x, y, w, h, scale):
+            if scale > 0:
+                # Convert all arguments to int
+                painter.drawEllipse(
+                    int(center_x - w * scale / 2 + x),
+                    int(y + (1 - scale) * h),
+                    int(w * scale),
+                    int(h * scale)
+                )
 
-        # 3. Head
-        if self.parts_remaining >= 3:
-            painter.drawEllipse(center_x - 30, 130, 60, 60)
+        def draw_scaled_line(x1, y1, x2, y2, scale):
+            if scale > 0:
+                # Interpolate toward center for shrinking
+                cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+                x1 = cx + (x1 - cx) * scale
+                y1 = cy + (y1 - cy) * scale
+                x2 = cx + (x2 - cx) * scale
+                y2 = cy + (y2 - cy) * scale
+                # Convert line coordinates to int as well
+                painter.drawLine(int(x1), int(y1), int(x2), int(y2))
 
-        # 4. Left Arm (stick)
-        if self.parts_remaining >= 4:
-            painter.drawLine(center_x - 40, 200, center_x - 90, 170)
+        # Snowman Parts (scaled)
 
-        # 5. Right Arm (stick)
-        if self.parts_remaining >= 5:
-            painter.drawLine(center_x + 40, 200, center_x + 90, 170)
+        if self.part_scales[0] > 0:
+            draw_scaled_ellipse(0, 250, 100, 100, self.part_scales[0])  # Base
+        if self.part_scales[1] > 0:
+            draw_scaled_ellipse(0, 180, 80, 80, self.part_scales[1])  # Middle
+        if self.part_scales[2] > 0:
+            draw_scaled_ellipse(0, 130, 60, 60, self.part_scales[2])  # Head
+        if self.part_scales[3] > 0:
+            draw_scaled_line(center_x - 40, 200, center_x - 90, 170, self.part_scales[3])  # Left arm
+        if self.part_scales[4] > 0:
+            draw_scaled_line(center_x + 40, 200, center_x + 90, 170, self.part_scales[4])  # Right arm
+        if self.part_scales[5] > 0:
+            # Face - also needs int conversion for ellipse arguments
+            painter.drawEllipse(
+                int(center_x - 15),
+                int(150),
+                int(5 * self.part_scales[5]),
+                int(5 * self.part_scales[5])
+            )
+            painter.drawEllipse(
+                int(center_x + 10),
+                int(150),
+                int(5 * self.part_scales[5]),
+                int(5 * self.part_scales[5])
+            )
+            # drawArc typically takes int arguments, ensure they are int as well
+            painter.drawArc(int(center_x - 15), int(165), int(30), int(15), int(0), int(-180 * 16))
+        if self.part_scales[6] > 0:
+            # drawLine and drawRect also need int arguments
+            painter.drawLine(int(center_x - 30), int(130), int(center_x + 30), int(130))  # Hat brim
+            painter.drawRect(int(center_x - 20), int(100), int(40), int(30))  # Hat top
+        
+    def reset(self):
+        self.parts_remaining = self.max_parts
+        self.animating = False
+        self.current_melting = None
+        self.part_scales = [1.0] * self.max_parts
+        self.update()
 
-        # 6. Face (eyes + smile)
-        if self.parts_remaining >= 6:
-            # Eyes
-            painter.drawEllipse(center_x - 15, 150, 5, 5)
-            painter.drawEllipse(center_x + 10, 150, 5, 5)
-            # Smile
-            painter.drawArc(center_x - 15, 165, 30, 15, 0, -180 * 16)
-
-        # 7. Hat
-        if self.parts_remaining >= 7:
-            # Hat brim
-            painter.drawLine(center_x - 30, 130, center_x + 30, 130)
-            # Hat top
-            painter.drawRect(center_x - 20, 100, 40, 30)
 
 
 class HangmanGame(QWidget):
@@ -185,7 +256,7 @@ class HangmanGame(QWidget):
         self.word = random.choice(words)
         self.guessed_letters = set()
         self.wrong_guesses = 0
-        self.max_wrong = 6
+        self.max_wrong = 7
 
         self.category_label.setText(f"Category: {self.category}")
         self.update_word_display()
@@ -194,6 +265,8 @@ class HangmanGame(QWidget):
         self.input_box.setEnabled(True)
         self.guessed_letters_label.setText("Guessed Letters: ")
         self.hangman_area.set_wrong_guesses(self.wrong_guesses)  # reset drawing
+        self.hangman_area.reset()  # Reset snowman to full
+
 
     def update_word_display(self):
         display = ' '.join([letter if letter in self.guessed_letters else '_' for letter in self.word])
