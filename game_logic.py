@@ -5,12 +5,12 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton,
     QVBoxLayout, QHBoxLayout, QTextEdit, QFrame
 )
-from PyQt5.QtGui import QFont, QPainter, QPen, QPixmap
-from PyQt5.QtCore import Qt, QTimer, QUrl
+from PyQt5.QtGui import QFont, QPainter, QPen
+from PyQt5.QtCore import Qt, QTimer
 
 # from PyQt5.QtMultimedia import QSoundEffect
 
-class HangmanDrawing(QWidget):
+class SnowmanDrawing(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumSize(300, 400)
@@ -20,7 +20,6 @@ class HangmanDrawing(QWidget):
         self.melt_step = 0
         self.current_melting = None
         self.part_scales = [1.0] * self.max_parts  # scale of each part (1.0 = full size)
-        self.bg_image = QPixmap("assets/images/background.jpg")
 
     def set_wrong_guesses(self, count):
         if self.animating:
@@ -35,7 +34,7 @@ class HangmanDrawing(QWidget):
         self.melt_step = 0
 
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.animate_melt)
+        self.timer.timeout.connect()
         self.timer.start(50)  # every 50ms
 
         # self.melt_sound = QSoundEffect()
@@ -63,10 +62,9 @@ class HangmanDrawing(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        pen = QPen(Qt.black, 2)
+        pen = QPen(Qt.black, 2.5)
         painter.setPen(pen)
         center_x = 150
-        painter.drawPixmap(self.rect(), self.bg_image)
         painter.setBrush(Qt.white)  # Solid white snowballs
 
 
@@ -93,36 +91,43 @@ class HangmanDrawing(QWidget):
 
         # Snowman Parts (scaled)
 
+        # if self.part_scales[0] > 0:
+        #     draw_scaled_ellipse(0, 250, 100, 100, self.part_scales[0])  # Base
+        # if self.part_scales[1] > 0:
+        #     draw_scaled_ellipse(0, 180, 80, 80, self.part_scales[1])  # Middle
+        # if self.part_scales[2] > 0:
+        #     draw_scaled_ellipse(0, 130, 60, 60, self.part_scales[2])  # Head
+        # New sizes (bigger snowman)
         if self.part_scales[0] > 0:
-            draw_scaled_ellipse(0, 250, 100, 100, self.part_scales[0])  # Base
+            draw_scaled_ellipse(0, 200, 140, 140, self.part_scales[0])  # Base
         if self.part_scales[1] > 0:
-            draw_scaled_ellipse(0, 180, 80, 80, self.part_scales[1])  # Middle
+            draw_scaled_ellipse(0, 120, 110, 110, self.part_scales[1])  # Middle
         if self.part_scales[2] > 0:
-            draw_scaled_ellipse(0, 130, 60, 60, self.part_scales[2])  # Head
+            draw_scaled_ellipse(0, 60, 80, 80, self.part_scales[2])    # Head
         if self.part_scales[3] > 0:
-            draw_scaled_line(center_x - 40, 200, center_x - 90, 170, self.part_scales[3])  # Left arm
+            draw_scaled_line(center_x - 40, 170, center_x - 90, 140, self.part_scales[3])  # Left arm
         if self.part_scales[4] > 0:
-            draw_scaled_line(center_x + 40, 200, center_x + 90, 170, self.part_scales[4])  # Right arm
+            draw_scaled_line(center_x + 40, 170, center_x + 90, 140, self.part_scales[4])  # Right arm
         if self.part_scales[5] > 0:
             # Face - also needs int conversion for ellipse arguments
             painter.drawEllipse(
                 int(center_x - 15),
-                int(150),
+                90,
                 int(5 * self.part_scales[5]),
                 int(5 * self.part_scales[5])
             )
             painter.drawEllipse(
                 int(center_x + 10),
-                int(150),
+                90,
                 int(5 * self.part_scales[5]),
                 int(5 * self.part_scales[5])
             )
             # drawArc typically takes int arguments, ensure they are int as well
-            painter.drawArc(int(center_x - 15), int(165), int(30), int(15), int(0), int(-180 * 16))
+            painter.drawArc(int(center_x - 15), 105, 30, 15, 0, int(-180 * 16))
         if self.part_scales[6] > 0:
             # drawLine and drawRect also need int arguments
-            painter.drawLine(int(center_x - 30), int(130), int(center_x + 30), int(130))  # Hat brim
-            painter.drawRect(int(center_x - 20), int(100), int(40), int(30))  # Hat top
+            painter.drawLine(int(center_x - 40), 65, int(center_x + 40), 65)  # Hat brim
+            painter.drawRect(int(center_x - 25), 25, 50, 40)  # Hat top
         
     def reset(self):
         self.parts_remaining = self.max_parts
@@ -132,16 +137,43 @@ class HangmanDrawing(QWidget):
         self.update()
 
 
-
-class HangmanGame(QWidget):
+class SnowmanGame(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Hangman Game")
         self.setGeometry(100, 100, 800, 500)
 
         self.word_bank = {
-            "Fruits": ["apple", "banana", "orange", "grape"],
-            "Animals": ["tiger", "elephant", "giraffe", "kangaroo"]
+            "Animals": [
+                "elephant", "giraffe", "kangaroo", "dolphin", "cheetah",
+                "penguin", "butterfly", "squirrel", "rhinoceros", "chimpanzee",
+                "crocodile", "flamingo", "chameleon", "hedgehog", "jellyfish",
+                "leopard", "nightingale", "ostrich", "toucan", "walrus"
+            ],
+            "Countries": [
+                "australia", "brazil", "canada", "denmark", "egypt",
+                "france", "germany", "india", "japan", "mexico",
+                "netherlands", "new zealand", "norway", "russia", "spain",
+                "thailand", "turkey", "united kingdom", "united states", "vietnam"
+            ],
+            "Fruits & Vegetables": [
+                "apple", "banana", "carrot", "grape", "broccoli",
+                "mango", "orange", "potato", "strawberry", "tomato",
+                "watermelon", "zucchini", "pineapple", "cucumber", "avocado",
+                "blueberry", "cherry", "lettuce", "mushroom", "pear"
+            ],
+            "Occupations": [
+                "teacher", "doctor", "engineer", "artist", "chef",
+                "pilot", "scientist", "firefighter", "police officer", "programmer",
+                "journalist", "architect", "musician", "lawyer", "nurse",
+                "veterinarian", "electrician", "plumber", "accountant", "baker"
+            ],
+            "Sports": [
+                "basketball", "soccer", "tennis", "baseball", "golf",
+                "volleyball", "swimming", "cricket", "badminton", "athletics",
+                "boxing", "cycling", "fencing", "gymnastics", "hockey",
+                "judo", "rugby", "skiing", "surfing", "table tennis"
+            ]
         }
 
         self.setStyleSheet("""
@@ -242,7 +274,7 @@ class HangmanGame(QWidget):
         left_layout.addWidget(self.guessed_letters_label)
 
         # Right section (Hangman drawing area)
-        self.hangman_area = HangmanDrawing()
+        self.hangman_area = SnowmanDrawing()
         self.hangman_area.setMinimumWidth(300)
 
         main_layout.addLayout(left_layout, 2)
@@ -311,6 +343,6 @@ class HangmanGame(QWidget):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = HangmanGame()
+    window = SnowmanGame()
     window.show()
     sys.exit(app.exec_())
