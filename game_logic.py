@@ -10,50 +10,56 @@ from PyQt5.QtCore import Qt
 class HangmanDrawing(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.wrong_guesses = 0
+        self.max_parts = 7
+        self.parts_remaining = self.max_parts
         self.setMinimumSize(300, 400)
 
     def set_wrong_guesses(self, count):
-        self.wrong_guesses = count
-        self.update()  # trigger repaint
+        self.parts_remaining = max(0, self.max_parts - count)
+        self.update()
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        pen = QPen(Qt.black, 3)
+        pen = QPen(Qt.black, 2)
         painter.setPen(pen)
 
-        # Draw the gallows base
-        painter.drawLine(50, 350, 250, 350)   # base
-        painter.drawLine(100, 350, 100, 50)   # pole
-        painter.drawLine(100, 50, 200, 50)    # top bar
-        painter.drawLine(200, 50, 200, 100)   # rope
+        center_x = 150
 
-        # Draw hangman parts based on wrong_guesses count
+        # 1. Base Snowball
+        if self.parts_remaining >= 1:
+            painter.drawEllipse(center_x - 50, 250, 100, 100)
 
-        if self.wrong_guesses > 0:
-            # Head (circle)
-            painter.drawEllipse(175, 100, 50, 50)
+        # 2. Middle Snowball
+        if self.parts_remaining >= 2:
+            painter.drawEllipse(center_x - 40, 180, 80, 80)
 
-        if self.wrong_guesses > 1:
-            # Body
-            painter.drawLine(200, 150, 200, 250)
+        # 3. Head
+        if self.parts_remaining >= 3:
+            painter.drawEllipse(center_x - 30, 130, 60, 60)
 
-        if self.wrong_guesses > 2:
-            # Left arm
-            painter.drawLine(200, 180, 150, 220)
+        # 4. Left Arm (stick)
+        if self.parts_remaining >= 4:
+            painter.drawLine(center_x - 40, 200, center_x - 90, 170)
 
-        if self.wrong_guesses > 3:
-            # Right arm
-            painter.drawLine(200, 180, 250, 220)
+        # 5. Right Arm (stick)
+        if self.parts_remaining >= 5:
+            painter.drawLine(center_x + 40, 200, center_x + 90, 170)
 
-        if self.wrong_guesses > 4:
-            # Left leg
-            painter.drawLine(200, 250, 160, 300)
+        # 6. Face (eyes + smile)
+        if self.parts_remaining >= 6:
+            # Eyes
+            painter.drawEllipse(center_x - 15, 150, 5, 5)
+            painter.drawEllipse(center_x + 10, 150, 5, 5)
+            # Smile
+            painter.drawArc(center_x - 15, 165, 30, 15, 0, -180 * 16)
 
-        if self.wrong_guesses > 5:
-            # Right leg
-            painter.drawLine(200, 250, 240, 300)
+        # 7. Hat
+        if self.parts_remaining >= 7:
+            # Hat brim
+            painter.drawLine(center_x - 30, 130, center_x + 30, 130)
+            # Hat top
+            painter.drawRect(center_x - 20, 100, 40, 30)
 
 
 class HangmanGame(QWidget):
@@ -67,6 +73,16 @@ class HangmanGame(QWidget):
             "Animals": ["tiger", "elephant", "giraffe", "kangaroo"]
         }
 
+        self.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(
+                    spread:pad, x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #e0f7fa, stop:1 #a7ffeb
+                );
+            }
+        """)
+
+
         self.setup_ui()
         self.new_game()
 
@@ -77,11 +93,11 @@ class HangmanGame(QWidget):
         left_layout = QVBoxLayout()
 
         self.category_label = QLabel("Category: ")
-        self.category_label.setFont(QFont("Arial", 14))
+        self.category_label.setFont(QFont("Segoe UI", 14))
         left_layout.addWidget(self.category_label)
 
         self.word_display = QLabel("")
-        self.word_display.setFont(QFont("Courier", 24))
+        self.word_display.setFont(QFont("Courier New", 24))
         left_layout.addWidget(self.word_display)
 
         self.input_label = QLabel("Enter a letter:")
@@ -92,20 +108,66 @@ class HangmanGame(QWidget):
         left_layout.addWidget(self.input_box)
         self.input_box.returnPressed.connect(self.handle_guess)  # Guess on Enter key
 
+        self.input_box.setStyleSheet("""
+            QLineEdit {
+                border: 2px solid #00acc1;
+                border-radius: 10px;
+                padding: 6px;
+                font-size: 16px;
+                background: #ffffff;
+            }
+        """)
+
         self.submit_button = QPushButton("Guess")
         left_layout.addWidget(self.submit_button)
         self.submit_button.clicked.connect(self.handle_guess)
+
+        self.submit_button.setStyleSheet("""
+            QPushButton {
+                background-color: #26c6da;
+                color: white;
+                font-weight: bold;
+                border-radius: 10px;
+                padding: 8px;
+            }
+            QPushButton:hover {
+                background-color: #00acc1;
+            }
+        """)
 
         self.new_game_button = QPushButton("New Game")
         left_layout.addWidget(self.new_game_button)
         self.new_game_button.clicked.connect(self.new_game)
 
+        self.new_game_button.setStyleSheet("""
+            QPushButton {
+                background-color: #66bb6a;
+                color: white;
+                font-weight: bold;
+                border-radius: 10px;
+                padding: 8px;
+            }
+            QPushButton:hover {
+                background-color: #43a047;
+            }
+        """)
+
         self.message_box = QTextEdit()
         self.message_box.setReadOnly(True)
         left_layout.addWidget(self.message_box)
 
+        self.message_box.setStyleSheet("""
+            QTextEdit {
+                background-color: #f1f8e9;
+                border: 2px solid #c5e1a5;
+                border-radius: 10px;
+                padding: 6px;
+                font-size: 14px;
+            }
+        """)
+
         self.guessed_letters_label = QLabel("Guessed Letters: ")
-        self.guessed_letters_label.setFont(QFont("Arial", 12))
+        self.guessed_letters_label.setFont(QFont("Segoe UI", 12))
         left_layout.addWidget(self.guessed_letters_label)
 
         # Right section (Hangman drawing area)
@@ -116,6 +178,7 @@ class HangmanGame(QWidget):
         main_layout.addWidget(self.hangman_area, 1)
 
         self.setLayout(main_layout)
+
 
     def new_game(self):
         self.category, words = random.choice(list(self.word_bank.items()))
