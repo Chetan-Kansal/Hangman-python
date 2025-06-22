@@ -1,11 +1,5 @@
-import sys
-import os
-import random
-from PyQt5.QtWidgets import (
-    QApplication, QWidget, QLabel, QLineEdit, QPushButton,
-    QVBoxLayout, QHBoxLayout, QTextEdit, QFrame
-)
-from PyQt5.QtGui import QFont, QPainter, QPen, QPixmap
+from PyQt5.QtWidgets import QWidget
+from PyQt5.QtGui import QPainter, QPen
 from PyQt5.QtCore import Qt, QTimer
 
 
@@ -120,5 +114,3 @@ class SnowmanDrawing(QWidget):
         self.current_melting = None
         self.part_scales = [1.0] * self.max_parts
         self.update()
-
-
