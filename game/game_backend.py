@@ -12,7 +12,7 @@ from game_frontend import SnowmanDrawing
 class SnowmanGame(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Hangman Game")
+        self.setWindowTitle("Don't Let Snowman Melt")
         self.setGeometry(100, 100, 800, 500)
 
         self.word_bank = {
