@@ -138,8 +138,8 @@ class SnowmanGame(QWidget):
             "Countries": [
                 "australia", "brazil", "canada", "denmark", "egypt",
                 "france", "germany", "india", "japan", "mexico",
-                "netherlands", "new zealand", "norway", "russia", "spain",
-                "thailand", "turkey", "united kingdom", "united states", "vietnam"
+                "netherlands", "new-zealand", "norway", "russia", "spain",
+                "thailand", "turkey", "united-kingdom", "united-states", "vietnam"
             ],
             "Fruits & Vegetables": [
                 "apple", "banana", "carrot", "grape", "broccoli",
